@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:22.04
 
 ARG JOBS=8
 ARG ONNXRUNTIME_VERSION=1.12.1
