@@ -5,17 +5,30 @@ ARG ONNXRUNTIME_VERSION=1.12.1
 ARG OPENCV_VERSION=4.8.0
 
 # Install Dependencies
-RUN apt-get update && apt-get install -y git \
+RUN apt-get update 
+RUN apt-get install -y \
+    git \
+    g++ \
+    wget \
+    unzip \
     python3.6 \
     python3-pip \
     pkg-config \
-    libgtest-dev 
-RUN python3 -m pip install cmake
+    libgtest-dev \
+    libgl1-mesa-glx \
+    ffmpeg \
+    libavformat-dev \
+    libavcodec-dev \
+    libswscale-dev \
+    gdb
+
+RUN python3 -m pip install cmake pandas scikit-learn opencv-python PyYAML openpyxl
 
 # Install onnxruntime
 RUN cd /tmp && \
-    git clone --depth 1 --branch v${ONNXRUNTIME_VERSION} https://github.com/Microsoft/onnxruntime.git && \
-    cd onnxruntime && \
+    git clone --depth 1 --branch v${ONNXRUNTIME_VERSION} --recursive https://github.com/Microsoft/onnxruntime.git 
+
+RUN cd tmp/onnxruntime && \
     ./build.sh --config RelWithDebInfo --build_shared_lib --parallel ${JOBS} && \
     cd build/Linux/RelWithDebInfo/ && \
     make install && \
@@ -23,14 +36,16 @@ RUN cd /tmp && \
 
 # Install OpenCV
 RUN cd /tmp && \
-    git clone --depth 1 --branch ${OPENCV_VERSION} https://github.com/opencv/opencv && \
-    git clone --depth 1 --branch ${OPENCV_VERSION} https://github.com/opencv/opencv_contrib && \
+    wget -O opencv.zip https://github.com/opencv/opencv/archive/4.x.zip && \
+    wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.x.zip && \
+    unzip opencv.zip && \
+    unzip opencv_contrib.zip && \
     mkdir -p build && cd build && \
-    cmake -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \
-        -D OPENCV_GENERATE_PKGCONFIG=ON \
-        ../opencv && \
+    cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-4.x/modules ../opencv-4.x && \
     cmake --build . -j ${JOBS} && \
-    make install && \
-    cd .. && rm -r opencv opencv_contrib
+    make install  
 
+RUN cd /tmp && rm -r opencv-4.x opencv_contrib-4.x build opencv.zip opencv_contrib.zip
+
+RUN cp /usr/local/include/onnxruntime/core/session/* /usr/local/include
 
